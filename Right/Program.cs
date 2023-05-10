@@ -59,7 +59,7 @@ app.MapPost("signup/{user}", async (AppDbContext db, UserCreateDTO user) =>
     await db.Users.AddAsync(usr);
     await db.SaveChangesAsync();
 
-    return Results.Created($"/users/{usr.Id}", usr);
+    return Ok();
 });
 
 app.MapPost("/login/{user}", async (UserLoginDTO user, HttpContext context, AppDbContext db) =>
