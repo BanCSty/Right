@@ -54,6 +54,10 @@ app.MapPost("signup/{user}", async (AppDbContext db, UserCreateDTO user) =>
     if (user.Password != user.ConfirmPassword)
         return Conflict("Password mismatch!");
 
+    if (db.Group.Any(g => g.Code == 0) && user.Role == 0)
+        return Conflict("There is already a \"master\" in the db");
+
+
     var usr = new User(user);
 
     await db.Users.AddAsync(usr);
@@ -67,12 +71,10 @@ app.MapPost("/login/{user}", async (UserLoginDTO user, HttpContext context, AppD
     var usr = await db.Users.FirstOrDefaultAsync(u => u.Login == user.Login &&
                     u.Password == HashMD5.hashPassword(user.Password));
 
-    if (usr is null) return Results.Unauthorized();
+    if (usr is null) return Results.Unauthorized(); //401 if user not found
 
     var group = await db.Group.FirstOrDefaultAsync(u => u.ID == usr.Id);
     var state = await db.State.FirstOrDefaultAsync(u => u.ID == usr.Id);
-
-    // если пользователь не найден, отправляем статусный код 401
 
     var claims = new List<Claim>
     {
