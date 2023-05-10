@@ -138,7 +138,8 @@ app.MapPost("deleteUser", [Authorize(Roles = "admin")] async ([FromBody] getUser
 
     if (usr != null)
     {
-        usr.UserState.Code = UserStateMod.Blocked;
+        var state = await db.State.FirstOrDefaultAsync(s => s.ID == usr.Id);
+        state.Code = UserStateMod.Blocked;
         await db.SaveChangesAsync();
 
         return Ok();
