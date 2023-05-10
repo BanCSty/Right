@@ -51,8 +51,10 @@ app.MapPost("signup/{user}", async (AppDbContext db, UserCreateDTO user) =>
     if (db.Users.Any(u => u.Login == user.Login))
         return Conflict("Invalid `login`: A user with this login address already exists.");
 
-    var usr = new User(user);
+    if (user.Password != user.ConfirmPassword)
+        return Conflict("Password mismatch!");
 
+    var usr = new User(user);
 
     await db.Users.AddAsync(usr);
     await db.SaveChangesAsync();
