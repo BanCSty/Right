@@ -73,18 +73,21 @@ app.MapPost("/login/{user}", async (UserLoginDTO user, HttpContext context, AppD
 
     if (usr is null) return Results.Unauthorized(); //401 if user not found
 
+    //Loading data into EF else it usr.Group and usr.Stat == null...
     var group = await db.Group.FirstOrDefaultAsync(u => u.ID == usr.Id);
     var state = await db.State.FirstOrDefaultAsync(u => u.ID == usr.Id);
+
+    if (usr.UserState.Code == UserStateMod.Blocked) return Conflict($"The {usr.Login} is bolecked");
 
     var claims = new List<Claim>
     {
         new Claim(ClaimsIdentity.DefaultNameClaimType, usr.Login),
-        new Claim(ClaimsIdentity.DefaultRoleClaimType, group.Code == 0 ? "admin" : "user")
+        new Claim(ClaimsIdentity.DefaultRoleClaimType, usr.UserGroup.Code == 0 ? "admin" : "user")
     };
     var claimsIdentity = new ClaimsIdentity(claims, "Cookies");
     var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
     await context.SignInAsync(claimsPrincipal);
-    return Results.Ok();
+    return Ok();
 });
 
 app.MapGet("/accessdenied", async (HttpContext context) =>
@@ -97,8 +100,9 @@ app.MapPost("/getUser/{user}/", [Authorize(Roles = "admin, user")] async ([FromB
 {
     var usr = await db.Users.FirstOrDefaultAsync(u => u.Login == user.Login);
 
-    if (usr is null) return Results.BadRequest();
+    if (usr is null) return BadRequest("User nor found!");
 
+    //Loading data into EF else it usr.Group and usr.Stat == null...
     var state = await db.State.FirstOrDefaultAsync(s => usr.Id == s.ID);
 
     var group = await db.Group.FirstOrDefaultAsync(g => usr.Id == g.ID);
